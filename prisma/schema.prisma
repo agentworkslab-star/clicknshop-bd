@@ -1,0 +1,263 @@
+// SQLite-compatible schema (for local development only)
+// This is identical to schema.prisma but uses String for arrays/JSON/enums
+// Use this if you want to run locally with SQLite file
+// For production (Vercel/PostgreSQL), use schema.prisma instead
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  brandName       String
+  whatsappNumber  String   @unique
+  email           String?  @unique
+  passwordHash    String
+  phone           String?
+  referralCode    String?
+  ownReferralCode String   @unique
+  plan            String   @default("FREE")
+  role            String   @default("USER")
+  isSuspended     Boolean  @default(false)
+  avatarUrl       String?
+  emailVerified   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  brandMemory       BrandMemory?
+  frameworks        Framework[]
+  generations       Generation[]
+  savedOutputs      SavedOutput[]
+  brandMemoriesExt  BrandMemoryExt[]
+  products          Product[]
+  contents          GeneratedContent[]
+  folders           Folder[]
+  apiSettings       ApiSettings?
+  usageLogs         UsageLog[]
+  sessions          Session[]
+  @@map("users")
+}
+
+model BrandMemory {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brandTone         String?
+  audiencePain      String?
+  winningCTA        String?
+  productOffers     String   @default("[]")
+  audienceProfile   String?
+  winningReferences String   @default("[]")
+  objections        String   @default("[]")
+  brandName         String?
+  website           String?
+  phone             String?
+  facebookPage      String?
+  whatsapp          String?
+  ctaDefault        String?
+  logoUrl           String?
+  primaryColor      String?  @default("#0b3d0b")
+  secondaryColor    String?  @default("#22C55E")
+  targetAudience    String?
+  description       String?
+  updatedAt         DateTime @updatedAt
+  @@map("brand_memory")
+}
+
+model Framework {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  type            String
+  description     String?
+  content         String
+  uploadedFileUrl String?
+  isPreset        Boolean  @default(false)
+  icon            String?  @default("BookOpen")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+  @@map("frameworks")
+}
+
+model Generation {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product         String
+  audience        String
+  tone            String
+  platform        String
+  frameworkId     String?
+  languageMode    String
+  duration        Int
+  hooks           String   @default("[]")
+  fullScript      String?
+  caption         String?
+  cta             String?
+  hashtags        String   @default("[]")
+  performanceNotes String?
+  templateType    String?
+  language        String?  @default("BN")
+  length          String?  @default("MEDIUM")
+  inputData       String   @default("{}")
+  outputText      String?
+  folderId        String?
+  isFavorite      Boolean  @default(false)
+  tags            String   @default("[]")
+  modelUsed       String
+  tokensUsed      Int      @default(0)
+  createdAt       DateTime @default(now())
+  isSaved         Boolean  @default(false)
+  @@index([userId, createdAt])
+  @@map("generations")
+}
+
+model SavedOutput {
+  id            String   @id @default(uuid())
+  userId        String
+  generationId  String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label         String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  @@index([userId])
+  @@map("saved_outputs")
+}
+
+model Referral {
+  id            String   @id @default(uuid())
+  referrerId    String
+  refereeId     String
+  rewardApplied Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  @@index([referrerId])
+  @@index([refereeId])
+  @@map("referrals")
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  category        String?
+  weight          String?
+  shortDesc       String?
+  longDesc        String?
+  benefits        String   @default("[]")
+  price           Float?
+  discountPrice   Float?
+  seoKeywords     String   @default("[]")
+  images          String   @default("[]")
+  stockStatus     String   @default("IN_STOCK")
+  sku             String?
+  contents        GeneratedContent[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+  @@map("products")
+}
+
+model GeneratedContent {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  templateType    String
+  inputData       String   @default("{}")
+  outputText      String
+  language        String   @default("BN")
+  tone            String?
+  length          String   @default("MEDIUM")
+  folderId        String?
+  folder          Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  isFavorite      Boolean  @default(false)
+  tags            String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId, createdAt])
+  @@map("generated_contents")
+}
+
+model BrandMemoryExt {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data            String
+  updatedAt       DateTime @updatedAt
+  @@map("brand_memories_ext")
+}
+
+model Folder {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  color           String   @default("#0b3d0b")
+  contents        GeneratedContent[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+  @@map("folders")
+}
+
+model Template {
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  name            String
+  description     String?
+  icon            String   @default("FileText")
+  systemPrompt    String
+  inputSchema     String   @default("{}")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@map("templates")
+}
+
+model ApiSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groqApiKeyEncrypted   String?
+  modelPreference       String   @default("llama-3.3-70b-versatile")
+  temperature           Float    @default(0.7)
+  maxTokens             Int      @default(2048)
+  updatedAt             DateTime @updatedAt
+  @@map("api_settings")
+}
+
+model UsageLog {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateType    String
+  tokensUsed      Int
+  modelUsed       String
+  durationMs      Int
+  success         Boolean  @default(true)
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  @@index([userId, createdAt])
+  @@map("usage_logs")
+}
+
+model Session {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token           String   @unique
+  userAgent       String?
+  ipAddress       String?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  @@index([userId])
+  @@map("sessions")
+}

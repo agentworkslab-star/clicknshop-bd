@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   FONTS
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap');
+
+/* ============================================
+   DESIGN TOKENS — Dark Mode Professional
+   Reference: 23_contentgen_ai_pro (Linear, Vercel style)
+   ============================================ */
+@layer base {
+  :root {
+    /* Surfaces — Deep navy, dark by default */
+    --bg-primary: #020817;
+    --bg-secondary: #0f1629;
+    --bg-tertiary: #1a2035;
+    --bg-card: rgba(255, 255, 255, 0.04);
+    --bg-card-hover: rgba(255, 255, 255, 0.06);
+
+    /* Borders */
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.15);
+
+    /* Text */
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    /* Accents */
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+
+    /* Brand gradient — primary */
+    --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    --gradient-cyan: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    --gradient-green: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  }
+
+  * { box-sizing: border-box; border-color: var(--border); }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Inter', 'Hind Siliguri', sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04';
+  }
+
+  :lang(bn), .bangla {
+    font-family: 'Hind Siliguri', 'Inter', sans-serif;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+  ::-webkit-scrollbar-thumb { background: var(--gradient-brand); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { opacity: 0.8; }
+}
+
+@layer utilities {
+  .bg-surface { background-color: var(--bg-primary); }
+  .bg-surface-2 { background-color: var(--bg-secondary); }
+  .bg-surface-3 { background-color: var(--bg-tertiary); }
+  .bg-glass { background-color: var(--bg-card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .bg-glass-hover { background-color: var(--bg-card-hover); }
+
+  .text-primary { color: var(--text-primary); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-muted { color: var(--text-muted); }
+
+  .border-default { border-color: var(--border); }
+  .border-hover { border-color: var(--border-hover); }
+
+  .bg-brand-gradient { background: var(--gradient-brand); }
+  .bg-cyan-gradient { background: var(--gradient-cyan); }
+  .bg-green-gradient { background: var(--gradient-green); }
+
+  .text-gradient {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 200ms ease;
+  }
+  .card:hover {
+    border-color: var(--border-hover);
+    background-color: var(--bg-card-hover);
+  }
+  .card-interactive { cursor: pointer; }
+  .card-interactive:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15); }
+
+  .glow-blue { box-shadow: 0 0 40px rgba(59, 130, 246, 0.35); }
+  .glow-purple { box-shadow: 0 0 40px rgba(139, 92, 246, 0.35); }
+
+  .skeleton { position: relative; overflow: hidden; background: var(--bg-tertiary); }
+  .skeleton::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    animation: shimmer 2s infinite;
+  }
+  .streaming-cursor::after { content: '▋'; margin-left: 2px; color: var(--accent-blue); animation: pulse 1.2s ease-in-out infinite; }
+}
+
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fade-in 0.3s ease-out; }
+.animate-slide-up { animation: slide-up 0.3s ease-out; }
+
+:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent-blue), 0 0 0 4px var(--bg-primary); border-radius: 6px; }
+::selection { background: var(--accent-blue); color: white; }

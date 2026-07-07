@@ -1,0 +1,348 @@
+// BanglaWriter — Prisma Schema
+// Supports: SQLite (local dev) + PostgreSQL (production - Vercel/Supabase/Neon)
+//
+// IMPORTANT: SQLite does not support native Json/String[]/enum types.
+// For SQLite: store arrays/JSON as String (JSON-encoded), enums as String with TS constants
+// For PostgreSQL: use native Json/array/enum types
+//
+// Toggle: set DATABASE_PROVIDER=postgresql in .env for production builds
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// NATIVE PostgreSQL TYPES
+// Use proper Json / String[] / enum types
+// (SQLite compatibility layer: lib/db-helpers.ts handles parsing)
+// ============================================
+
+model User {
+  id              String   @id @default(uuid())
+  brandName       String   // business/brand name
+  whatsappNumber  String   @unique  // WhatsApp = login id
+  email           String?  @unique  // optional email
+  passwordHash    String
+  phone           String?  // display phone
+  referralCode    String?  // code they used at signup
+  ownReferralCode String   @unique
+  plan            Plan     @default(FREE)
+  role            Role     @default(USER)
+  isSuspended     Boolean  @default(false)
+  avatarUrl       String?
+  emailVerified   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  brandMemory       BrandMemory?
+  frameworks        Framework[]
+  generations       Generation[]
+  savedOutputs      SavedOutput[]
+  brandMemoriesExt  BrandMemoryExt[]
+  products          Product[]
+  contents          GeneratedContent[]
+  folders           Folder[]
+  apiSettings       ApiSettings?
+  usageLogs         UsageLog[]
+  sessions          Session[]
+  referralsGiven    Referral[] @relation("Referrer")
+  referralsReceived Referral[] @relation("Referee")
+
+  @@map("users")
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model BrandMemory {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  brandTone         String?
+  audiencePain      String?
+  winningCTA        String?
+  productOffers     Json?    @default("[]")
+  audienceProfile   Json?
+  winningReferences Json?    @default("[]")
+  objections        Json?    @default("[]")
+
+  brandName         String?
+  website           String?
+  phone             String?
+  facebookPage      String?
+  whatsapp          String?
+  ctaDefault        String?
+  logoUrl           String?
+  primaryColor      String?  @default("#0b3d0b")
+  secondaryColor    String?  @default("#22C55E")
+  targetAudience    String?
+  description       String?
+
+  updatedAt         DateTime @updatedAt
+
+  @@map("brand_memory")
+}
+
+model Framework {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name            String
+  type            FrameworkType
+  description     String?
+  content         String
+  uploadedFileUrl String?
+  isPreset        Boolean  @default(false)
+  icon            String?  @default("BookOpen")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@map("frameworks")
+}
+
+enum FrameworkType {
+  PAS
+  AIDA
+  HORMOZI
+  STORYTELLING
+  CUSTOM
+}
+
+model Generation {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  product         String
+  audience        String
+  tone            String
+  platform        Platform
+  frameworkId     String?
+  languageMode    LanguageMode
+  duration        Int
+
+  hooks           Json     @default("[]")
+  fullScript      String?
+  caption         String?
+  cta             String?
+  hashtags        String[] @default([])
+  performanceNotes String?
+
+  templateType    String?
+  language        String?  @default("BN")
+  length          String?  @default("MEDIUM")
+  inputData       Json?    @default("{}")
+  outputText      String?
+  folderId        String?
+  isFavorite      Boolean  @default(false)
+  tags            String[] @default([])
+  modelUsed       String
+  tokensUsed      Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  isSaved         Boolean  @default(false)
+
+  @@index([userId, createdAt])
+  @@map("generations")
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM_REELS
+  YOUTUBE_SHORTS
+  TIKTOK
+}
+
+enum LanguageMode {
+  BANGLA
+  MIXED
+  ENGLISH
+}
+
+model SavedOutput {
+  id            String   @id @default(uuid())
+  userId        String
+  generationId  String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label         String?
+  notes         String?
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@map("saved_outputs")
+}
+
+model Referral {
+  id            String   @id @default(uuid())
+  referrerId    String
+  refereeId     String
+  referrer      User     @relation("Referrer", fields: [referrerId], references: [id])
+  referee       User     @relation("Referee", fields: [refereeId], references: [id])
+  rewardApplied Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+
+  @@index([referrerId])
+  @@index([refereeId])
+  @@map("referrals")
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name            String
+  category        String?
+  weight          String?
+  shortDesc       String?
+  longDesc        String?
+  benefits        String[] @default([])
+  price           Float?
+  discountPrice   Float?
+  seoKeywords     String[] @default([])
+  images          String[] @default([])
+  stockStatus     StockStatus @default(IN_STOCK)
+  sku             String?
+
+  contents        GeneratedContent[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@map("products")
+}
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+model GeneratedContent {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  templateType    String
+  inputData       Json     @default("{}")
+  outputText      String
+  language        String   @default("BN")
+  tone            String?
+  length          String   @default("MEDIUM")
+  folderId        String?
+  folder          Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  isFavorite      Boolean  @default(false)
+  tags            String[] @default([])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("generated_contents")
+}
+
+model BrandMemoryExt {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data            Json
+  updatedAt       DateTime @updatedAt
+
+  @@map("brand_memories_ext")
+}
+
+model Folder {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  color           String   @default("#0b3d0b")
+  contents        GeneratedContent[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@map("folders")
+}
+
+model Template {
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  name            String
+  description     String?
+  icon            String   @default("FileText")
+  systemPrompt    String
+  inputSchema     Json     @default("{}")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("templates")
+}
+
+model ApiSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groqApiKeyEncrypted   String?
+  modelPreference       String   @default("llama-3.3-70b-versatile")
+  temperature           Float    @default(0.7)
+  maxTokens             Int      @default(2048)
+  updatedAt             DateTime @updatedAt
+
+  @@map("api_settings")
+}
+
+model UsageLog {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateType    String
+  tokensUsed      Int
+  modelUsed       String
+  durationMs      Int
+  success         Boolean  @default(true)
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("usage_logs")
+}
+
+model Session {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token           String   @unique
+  userAgent       String?
+  ipAddress       String?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}

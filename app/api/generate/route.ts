@@ -27,10 +27,13 @@ const generateSchema = z.object({
     'REEL_SCRIPT',
     'IMAGE_PROMPT',
   ]),
-  productId: z.string().min(1),
+  productId: z.string().optional(),  // Optional to avoid UI 400 errors
   language: z.enum(['BN', 'EN', 'MIXED']).optional(),
   tone: z.string().optional(),
   length: z.enum(['SHORT', 'MEDIUM', 'LONG']).optional(),
+  emoji: z.boolean().optional(),
+  cta: z.boolean().optional(),
+  additionalInstructions: z.string().optional(),
   imagePurpose: z.string().optional(),
   imageStyle: z.string().optional(),
   imageMood: z.string().optional(),
@@ -67,7 +70,7 @@ export async function POST(req: NextRequest) {
       user.brandName || 'Your Brand',
       data.template,
       {
-        productId: data.productId,
+        productId: data.productId || undefined,
         language: data.language || 'BN',
         tone: data.tone,
         length: data.length || 'MEDIUM',
@@ -143,7 +146,7 @@ export async function POST(req: NextRequest) {
             const content = await prisma.generatedContent.create({
               data: {
                 userId: user.id,
-                productId: data.productId,
+                productId: data.productId || null,
                 templateType: data.template,
                 inputData: stringifyJson(data),
                 outputText: fullText,

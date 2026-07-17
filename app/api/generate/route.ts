@@ -129,8 +129,7 @@ export async function POST(req: NextRequest) {
                   controller.enqueue(
                     encoder.encode(
                       `data: ${JSON.stringify({
-                        type: 'content',
-                        content,
+                        text: content,
                       })}\n\n`
                     )
                   );

@@ -115,27 +115,39 @@ export async function POST(req: NextRequest) {
             const { done, value } = await reader.read();
             if (done) break;
             const text = decoder.decode(value);
-            // Parse SSE format
-            const lines = text.split('\n').filter((line) => line.startsWith('data: '));
-            for (const line of lines) {
-              const data = line.replace('data: ', '').trim();
-              if (data === '[DONE]') continue;
-              try {
-                const json = JSON.parse(data);
-                const content = json.choices?.[0]?.delta?.content || '';
-                if (content) {
-                  fullText += content;
-                  tokenCount++;
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        text: content,
-                      })}\n\n`
-                    )
-                  );
+            // Check if it's SSE format (data: ...) or plain text (LLM7.io non-streaming)
+            if (text.includes('data: ')) {
+              // Parse SSE format
+              const lines = text.split('\n').filter((line) => line.startsWith('data: '));
+              for (const line of lines) {
+                const data = line.replace('data: ', '').trim();
+                if (data === '[DONE]') continue;
+                try {
+                  const json = JSON.parse(data);
+                  const content = json.choices?.[0]?.delta?.content || '';
+                  if (content) {
+                    fullText += content;
+                    tokenCount++;
+                    controller.enqueue(
+                      encoder.encode(
+                        `data: ${JSON.stringify({ text: content })}\n\n`
+                      )
+                    );
+                  }
+                } catch (e) {
+                  // Skip malformed JSON
                 }
-              } catch (e) {
-                // Skip malformed JSON
+              }
+            } else {
+              // Plain text response (LLM7.io non-streaming)
+              if (text) {
+                fullText = text;
+                tokenCount = text.split(/\s+/).length;
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ text })}\n\n`
+                  )
+                );
               }
             }
           }

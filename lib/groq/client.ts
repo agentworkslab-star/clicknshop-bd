@@ -142,12 +142,54 @@ export async function generateCompletion(
   }
 }
 
-// Streaming version (for future use)
+// Streaming version - returns a ReadableStream that emits the AI completion
+// For LLM7.io: uses non-streaming API and emits all content at once
+// For other providers: uses real streaming
 export async function generateCompletionStream(
   messages: any[],
   options: any = {}
 ) {
   const config = getProviderConfig();
+
+  // LLM7.io has broken streaming format (Unicode chars with spaces)
+  // Use non-streaming for LLM7.io, return as fake stream
+  if (config.name === 'LLM7.io') {
+    const response = await fetch(`${config.baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.max_tokens ?? 2048,
+        stream: false, // Disable streaming for LLM7.io
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`${config.name} API ${response.status}: ${errText.substring(0, 200)}`);
+    }
+
+    const data = await response.json();
+    const fullText = data.choices?.[0]?.message?.content || '';
+
+    // Return as a single-chunk stream
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+      start(controller) {
+        if (fullText) {
+          controller.enqueue(encoder.encode(fullText));
+        }
+        controller.close();
+      },
+    });
+  }
+
+  // Real streaming for Groq/Mistral/OpenRouter
   const response = await fetch(`${config.baseURL}/chat/completions`, {
     method: 'POST',
     headers: {
